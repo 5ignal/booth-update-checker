@@ -37,6 +37,7 @@ def init_update_check(product):
             
     download_short_list = list()
     thumblist = list()
+    
     download_url_list = booth.crawling(order_num, check_only_list, booth_cookie, download_short_list, thumblist)
 
     if name is None:
@@ -340,6 +341,8 @@ if __name__ == "__main__":
     createFolder("./process")
 
     while True:
+        product_dict = {}
+        
         config_json = {}
         with open("checklist.json") as file:
             config_json = simdjson.load(file)
@@ -361,10 +364,12 @@ if __name__ == "__main__":
         current_time = strftime_now()
 
         for product in config_json['products']:
+            # TODO: 2.0, merge this in one variable
             order_num = product['booth-order-number']
+            # product_num = product['booth-product-number']
+            
             # BOOTH Heartbeat
             # KT™ Sucks. Thank you.
-            
             try:
                 log_print(order_num, 'Checking BOOTH heartbeat')
                 requests.get("https://booth.pm")
@@ -372,10 +377,14 @@ if __name__ == "__main__":
                 log_print(order_num, 'BOOTH heartbeat failed')
                 break
         
-            try:
+            crawling_type = product.get('crawling_type', 0)
+            if crawling_type is 0:
                 init_update_check(product)
-            except PermissionError:
-                log_print(order_num, 'error occured on checking')
+            elif crawling_type is 1:
+                # WAIT! Is this deep copy?
+                product_dict["product_num"] = product
+                
+        booth.crawling_library(booth_cookie, product_dict)
             
         # 갱신 대기
         print("waiting for refresh")
