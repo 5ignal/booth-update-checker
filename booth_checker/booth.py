@@ -2,6 +2,31 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
+# product_input_dict[crawling_type]
+# {
+#      "PRODUCT_NUMBER" 
+#      {
+#         ... reference: setting in checklist
+        
+#         // 0
+#         "product_only"
+#      }
+# }
+
+# product_output_info[crawling_type]
+# {
+#     // common
+#     "shortlist"
+#     "thumblist"
+#     "download_url_list"
+#     "product_info_list"
+
+#     // 0
+    
+#     // 1: Using library
+# }
+
+
 def crawling(order_num, product_only, cookie, shortlist = None, thumblist = None):
     url = f'https://accounts.booth.pm/orders/{order_num}'
     response = requests.get(url=url, cookies=cookie)
@@ -43,6 +68,41 @@ def crawling(order_num, product_only, cookie, shortlist = None, thumblist = None
                 shortlist.append(href)
             
     return download_url_list, product_info_list
+
+
+def crawling_library(cookie, product_dict):
+    urls = [
+        'https://accounts.booth.pm/library',
+        'https://accounts.booth.pm/library/gifts'
+    ]
+    
+    download_url_list = list()
+    product_info_list = list()
+    
+    for current_url in urls:
+        page = 1
+        while True:
+            page_url = current_url + f'?page={page}'
+            
+            response = requests.get(url=page_url, cookies=cookie)
+            html = response.content
+            
+            soup = BeautifulSoup(html, "html.parser")
+            if soup.find("div", class_="u-mt-500 u-text-center") is not None: break
+            
+            product_divs = soup.find_all("div", class_="l-col-auto")
+            for product_div in product_divs:
+                product_info = product_div.select_one("a")
+                product_url = product_info.get("href")
+                product_number = re.sub(r'[^0-9]', '', product_url)
+                 
+                product_info = product_dict.get(product_number, None)
+                if product_info is None: continue
+            
+           
+        
+            # print(html)
+            page += 1
 
 
 def download_item(download_number, filepath, cookie):
